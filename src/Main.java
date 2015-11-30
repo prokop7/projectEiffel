@@ -2,6 +2,7 @@ import java.io.*;
 import java.util.LinkedList;
 import java.util.regex.Matcher;
 
+//second execute
 public class Main {
     static Node root;       //global root node
     static Node current;
