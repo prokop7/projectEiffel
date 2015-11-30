@@ -50,7 +50,7 @@ public class Main {
      *
      * @param line string for changing
      * @return updated line
-     * add  .out for integer and other variables
+     * TODO add  .out for integer and other variables
      * TODO change camelCase to camel_case ( key.replaceAll("(.)(\\p{Upper})", "$1_$2").toLowerCase(); )
      */
     private static String applyAllPatterns(String line) {
