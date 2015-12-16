@@ -5,6 +5,12 @@ public class Analyzer {
             Pattern.compile
                     ("(public |private |protected )?(static |abstract )?(class) (\\w+)\\s*?\\{");
 
+    /**
+     * group 1 - content from print
+     */
+    static Pattern textFromPrint =
+            Pattern.compile(
+                    "\\s*?print\\s*\\((.*)\\);");
 
     static Pattern featurePattern =
             Pattern.compile

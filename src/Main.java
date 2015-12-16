@@ -6,10 +6,13 @@ import java.util.regex.Matcher;
 public class Main {
     static Node root;       //global root node
     static Node current;
+    static Node currentFeature;
 
     public static void main(String[] args) throws IOException {
-        String path = "C:\\Users\\proko\\IdeaProjects\\hello_world\\src\\";
-        BufferedReader reader = new BufferedReader(new FileReader(path + "Main.java"));
+        //String path = "C:\\Users\\proko\\IdeaProjects\\hello_world\\src\\";
+        BufferedReader reader = new BufferedReader(new FileReader(
+                //path +
+                "Main.java"));
         BufferedWriter writer = new BufferedWriter(new FileWriter("test.e"));
         convertToTree(reader);
         runDFS(root, writer);
@@ -32,7 +35,8 @@ public class Main {
             writer.write("end");
         }
         if (current.type != Type.CLASS && current.type != Type.NONE && current.type != Type.INTERFACE) {
-            printFunction(current, writer);
+            printFeatures(current, writer);
+            currentFeature = current;
             for (Node child : current.children) {
                 runDFS(child, writer);
             }
@@ -50,20 +54,47 @@ public class Main {
      *
      * @param line string for changing
      * @return updated line
-     * TODO add  .out for integer and other variables
      * TODO change camelCase to camel_case ( key.replaceAll("(.)(\\p{Upper})", "$1_$2").toLowerCase(); )
      */
     private static String applyAllPatterns(String line) {
         line = line
                 .replaceAll("System.out.println", "print")  //replace "System.out.println" --> "print"
                 .replaceAll("(?<!=)=(?!=)", ":=");          //replace "="                  --> ":="
+        if (line.matches("\\s*print.*"))
+            line = addOutForVariables(line);                //add for variables .out
         if (line.matches("return.*"))                       //replace "return (.*)"        --> result:= .*
             line = line.replaceAll("return\\s+\\(?", "result:= ").replaceAll("\\)\\s*;", ";");
         return line;
     }
 
+    /**
+     * Add for variables .out there where necessary.
+     *
+     * @param line
+     * @return modified line
+     */
+    private static String addOutForVariables(String line) {
+        Matcher matcher = Analyzer.textFromPrint.matcher(line);
+        matcher.find();
+        String[] temp = matcher.group(1).split("\\s*\\+\\s*");
+        for (int i = 0; i < temp.length; i++) {
+            if (!temp[i].trim().matches("\".*\""))
+                for (Variable var : currentFeature.variables) {
+                    if ((var.name.matches(".*\\s?" + temp[i] + ",?\\s?.*") && var.type != Type.STRING) || temp[i].matches("^\\d")) {
+                        temp[i] = temp[i].trim().replaceAll(temp[i], temp[i] + ".out");
+                        break;
+                    }
+                }
+        }
+        String contents = "";
+        for (String fromPrint : temp)
+            contents += fromPrint + " + ";
+        contents = contents.replaceAll("(\\s\\+\\s)$", "");
+        line = line.replace(matcher.group(1), contents);
+        return line;
+    }
 
-    private static void printFunction(Node feature, BufferedWriter writer) throws IOException {
+    private static void printFeatures(Node feature, BufferedWriter writer) throws IOException {
         if (feature.name.compareTo("main") == 0) {
             writer.write("create\n\tmake\n\n");
             writer.write("feature\n\t\t-- Run application");

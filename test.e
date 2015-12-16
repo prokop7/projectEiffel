@@ -14,10 +14,11 @@ feature
 			INTEGER : a, c, b
 			STRING : t
 		do
-			print("World!");
 			b := 52345;
-			print(b);
+			print("World!" + a.out + "gfhgf" + 5.out);
+			print(b.out);
 			t := lol();
+			print(t);
 		end
 
 	lol : STRING
@@ -25,7 +26,7 @@ feature
 			INTEGER : a
 		do
 			a := 1;
-			print(a);
+			print(a.out);
 			result:= "lol";
 		end
 
