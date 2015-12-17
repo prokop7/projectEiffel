@@ -54,7 +54,6 @@ public class Main {
      *
      * @param line string for changing
      * @return updated line
-     * TODO change camelCase to camel_case ( key.replaceAll("(.)(\\p{Upper})", "$1_$2").toLowerCase(); )
      */
     private static String applyAllPatterns(String line) {
         line = line
@@ -62,6 +61,8 @@ public class Main {
                 .replaceAll("(?<!=)=(?!=)", ":=");          //replace "="                  --> ":="
         if (line.matches("\\s*print.*"))
             line = addOutForVariables(line);                //add for variables .out
+        else
+            line = line.replaceAll("(.)(\\p{Upper})", "$1_$2").toLowerCase(); // from camelCase to Eiffel shit.
         if (line.matches("return.*"))                       //replace "return (.*)"        --> result:= .*
             line = line.replaceAll("return\\s+\\(?", "result:= ").replaceAll("\\)\\s*;", ";");
         return line;
@@ -81,7 +82,7 @@ public class Main {
             if (!temp[i].trim().matches("\".*\""))
                 for (Variable var : currentFeature.variables) {
                     if ((var.name.matches(".*\\s?" + temp[i] + ",?\\s?.*") && var.type != Type.STRING) || temp[i].matches("^\\d")) {
-                        temp[i] = temp[i].trim().replaceAll(temp[i], temp[i] + ".out");
+                        temp[i] = temp[i].trim().replaceAll(temp[i], temp[i].replaceAll("(.)([A-Z])", "$1_$2").toLowerCase() + ".out");
                         break;
                     }
                 }
@@ -104,7 +105,7 @@ public class Main {
             writer.write(" : " + feature.type.toString());
         writer.write("\n\t\tlocal\n\t\t");
         for (Variable var : feature.variables)
-            writer.write("\t" + var.type.toString() + " : " + var.name + "\n\t\t");
+            writer.write("\t" + var.type.toString() + " : " + var.name.replaceAll("(\\S)([A-Z])", "$1_$2").toLowerCase() + "\n\t\t");
         writer.write("do\n");
     }
 
@@ -179,7 +180,7 @@ public class Main {
      *
      * @param line line with variables
      * @return TODO add initialization like " = new ArrayList<>;"
-     * TODO variables must be NODE! Not line of code!!
+     * TODO variables must be NODE! Not line of code!! p.s. Now, I don't know WHY!?
      */
     private static Variable getVariable(String line) {
         Variable variable;
