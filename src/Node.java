@@ -12,6 +12,7 @@ public class Node {
     protected Modifier modifier = Modifier.NONE;
     protected LinkedList<Node> children = new LinkedList<>();
     public LinkedList<Variable> variables = new LinkedList<>();
+    protected Node parrent;
 
     public Node() {
     }

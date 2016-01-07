@@ -11,14 +11,16 @@ feature
 		-- Run application
 	make
 		local
-			INTEGER : a, c, b
+			INTEGER : a, c, a_lot_of_string, b, i
 			STRING : t
 		do
 			b := 52345;
-			print("World!" + a.out + "gfhgf" + 5.out);
+			print("World!" + a_lot_of_string.out + "gfhgf" + 5.out);
 			print(b.out);
+			-- Here will be loop
+				print(i.out);
 			t := lol();
-			print(t);
+			print(t.out);
 		end
 
 	lol : STRING

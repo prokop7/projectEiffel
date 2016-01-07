@@ -1,6 +1,7 @@
 import java.io.*;
 import java.util.LinkedList;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 //second execute
 public class Main {
@@ -34,7 +35,10 @@ public class Main {
             }
             writer.write("end");
         }
-        if (current.type != Type.CLASS && current.type != Type.NONE && current.type != Type.INTERFACE) {
+        if (current.type != Type.CLASS
+                && current.type != Type.NONE
+                && current.type != Type.INTERFACE
+                && current.type != Type.LOOP) {
             printFeatures(current, writer);
             currentFeature = current;
             for (Node child : current.children) {
@@ -42,6 +46,13 @@ public class Main {
             }
             writer.write("\t\tend\n");
         }
+
+        if (current.type == Type.LOOP)
+            for (Node child : current.children) {
+                writer.write("\t\t\t-- Here will be loop");
+                writer.write("\n\t");
+                runDFS(child, writer);
+            }
         if (current.type == Type.NONE && current.name.compareTo("") != 0) {
             String name = applyAllPatterns(current.name);
             writer.write("\t\t\t" + name + "\n");
@@ -77,6 +88,7 @@ public class Main {
     private static String addOutForVariables(String line) {
         Matcher matcher = Analyzer.textFromPrint.matcher(line);
         matcher.find();
+
         String[] temp = matcher.group(1).split("\\s*\\+\\s*");
         for (int i = 0; i < temp.length; i++) {
             if (!temp[i].trim().matches("\".*\""))
@@ -91,8 +103,13 @@ public class Main {
         for (String fromPrint : temp)
             contents += fromPrint + " + ";
         contents = contents.replaceAll("(\\s\\+\\s)$", "");
-        line = line.replace(matcher.group(1), contents);
+        line = replaceGroup(matcher, line, 1, contents);
         return line;
+    }
+
+    public static String replaceGroup(Matcher m, String source, int groupToReplace, String replacement) {
+        //Matcher m = Pattern.compile(regex).matcher(source);
+        return new StringBuilder(source).replace(m.start(groupToReplace), m.end(groupToReplace), replacement).toString();
     }
 
     private static void printFeatures(Node feature, BufferedWriter writer) throws IOException {
@@ -130,48 +147,58 @@ public class Main {
 
     private static void convertToTree(BufferedReader reader) throws IOException {
         String line = reader.readLine();
+        while (line != null) {
 
-        //Check to null and trim
-        if (line == null) return;
-        else line = line.trim();
+            line = line.trim();
 
-        //create all matches
-        Matcher aClass, feature, var;
-        aClass = Analyzer.classPattern.matcher(line);
-        feature = Analyzer.featurePattern.matcher(line);
-        //loop = Analyzer.forPattern.matcher(line);
-        var = Analyzer.variableCheck.matcher(line);
+            //create all matches
+            Matcher aClass, feature, var, loop;
+            aClass = Analyzer.classPattern.matcher(line);
+            feature = Analyzer.featurePattern.matcher(line);
+            loop = Analyzer.forPattern.matcher(line);
+            var = Analyzer.variableCheck.matcher(line);
 
-
-        if (aClass.find()) {
-            //add an element into Class
-            root = new Class(
-                    Access.valueOf(aClass.group(1).toUpperCase().trim()), //Access
-                    aClass.group(4).replaceAll("Main", "APPLICATION"));   //Name
-            current = root;
-            convertToTree(reader);
-        } else if (feature.find()) {
-            //add an element into Feature
-            Feature temp = new Feature(
-                    Access.valueOf(feature.group(1).toUpperCase().trim()),                              //Access
-                    Modifier.valueOf(feature.group(2).toUpperCase().trim()),                            //Modifier
-                    Type.valueOf(feature.group(3).toUpperCase().trim().replaceAll("INT", "INTEGER")),   //Type
-                    feature.group(5));                                                                  //Name
-            root.children.add(temp);
-            current = temp;
-            convertToTree(reader);
-        } else if (line.matches("}")) {
-            //find end of the expression
-            convertToTree(reader);
-        } else if (var.find()) {
-            //add Variable
-            Variable newVariable = getVariable(line);
-            current.variables = addVariables(current.variables, newVariable);
-            convertToTree(reader);
-        } else {
-            //Just a code
-            current.children.add(new Node(line));
-            convertToTree(reader);
+            if (aClass.find()) {
+                //add an element into Class
+                root = new Class(
+                        Access.valueOf(aClass.group(1).toUpperCase().trim()), //Access
+                        aClass.group(4).replaceAll("Main", "APPLICATION"));   //Name
+                current = root;
+            } else if (feature.find()) {
+                //add an element into Feature
+                Feature temp = new Feature(
+                        Access.valueOf(feature.group(1).toUpperCase().trim()),                              //Access
+                        Modifier.valueOf(feature.group(2).toUpperCase().trim()),                            //Modifier
+                        Type.valueOf(feature.group(3).toUpperCase().trim().replaceAll("INT", "INTEGER")),   //Type
+                        feature.group(5));                                                                  //Name
+                root.children.add(temp);
+                temp.parrent = current;
+                current = temp;
+            } else if (loop.find()) {
+                Loop temp = new Loop(
+                        loop.group(1),
+                        loop.group(2),
+                        loop.group(3)
+                );
+                Variable from = getVariable(loop.group(1) + ";", false);
+                addVariables(current.variables, from);
+                current.children.add(temp);
+                temp.parrent = current;
+                current = temp;
+            } else if (line.matches("}")) {
+                //find end of the expression
+                current = current.parrent;
+            } else if (var.find()) {
+                //add Variable
+                Variable newVariable = getVariable(line, true);
+                current.variables = addVariables(current.variables, newVariable);
+            } else {
+                //Just a code
+                Node temp = new Node(line);
+                current.children.add(temp);
+                temp.parrent = current;
+            }
+            line = reader.readLine();
         }
     }
 
@@ -179,17 +206,19 @@ public class Main {
      * Get variable with all attributes
      *
      * @param line line with variables
+     * @param b
      * @return TODO add initialization like " = new ArrayList<>;"
      * TODO variables must be NODE! Not line of code!! p.s. Now, I don't know WHY!?
      */
-    private static Variable getVariable(String line) {
+    private static Variable getVariable(String line, boolean b) {
         Variable variable;
         Matcher varMatcher = Analyzer.variableDeclared.matcher(line);
         if (varMatcher.find()) {
             variable = new Variable(
                     Type.valueOf(varMatcher.group(2).toUpperCase().trim().replaceAll("INT", "INTEGER")),    //Type
                     varMatcher.group(3));                                                                   //Name
-            current.children.add(new Node(line.replaceAll(varMatcher.group(2) + "\\s*", "")));
+            if (b)
+                current.children.add(new Node(line.replaceAll(varMatcher.group(2) + "\\s*", "")));
         } else {
             varMatcher = Analyzer.variableComma.matcher(line);
             varMatcher.find();

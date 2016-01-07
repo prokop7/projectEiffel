@@ -22,7 +22,7 @@ public class Analyzer {
      */
     static Pattern variableCheck =
             Pattern.compile
-                    ("(?:public\\s+|private\\s+|protected\\s+|final\\s+|static\\s+)?(int\\s+|String\\s+|double\\s+)(\\w+)\\s*(.*);");
+                    ("^(?:public\\s+|private\\s+|protected\\s+|final\\s+|static\\s+)?(int\\s+|String\\s+|double\\s+)(\\w+)\\s*(.*);");
 
     /**
      * Variable with decalration Pattern
@@ -46,10 +46,14 @@ public class Analyzer {
             Pattern.compile
                     ("((?:public\\s+|private\\s+|protected\\s+|final\\s+|static\\s+)*)(\\w+)\\s+((?:\\w+(?:\\s*,\\s*)?)+);");
 
-
+    /**
+     * Loop "for"
+     * group 1 -
+     * group 2 -
+     */
     static Pattern forPattern =
             Pattern.compile
-                    ("for.*?\\(([int|char|String].* = .*)?;(.*)?;(.*)?\\)((?s:.)*?(;|\\{(?s:.)*?}))");
+                    ("\\s*for\\s*\\(\\s*([int|char|String].* = .*)?\\s*;\\s*(.*)?\\s*;\\s*(.*?)?\\s*\\)\\s*((\\{?.*;\\s*}?)|\\s*\\{)");
 
 
     static Pattern whilePattern =

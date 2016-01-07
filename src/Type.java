@@ -1,6 +1,7 @@
 public enum Type {
     CLASS("class"),
     NONE("none"),
+    LOOP("LOOP"),
     INTERFACE("interface"),
     VOID("Void"),
     STRING("STRING"),
