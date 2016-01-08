@@ -39,7 +39,9 @@ public class Main {
                 && current.type != Type.NONE
                 && current.type != Type.INTERFACE
                 && current.type != Type.LOOP) {
+
             printFeatures(current, writer);
+
             currentFeature = current;
             for (Node child : current.children) {
                 runDFS(child, writer);
@@ -49,14 +51,33 @@ public class Main {
 
         if (current.type == Type.LOOP)
             for (Node child : current.children) {
-                writer.write("\t\t\t-- Here will be loop");
-                writer.write("\n\t");
+                //getVariable(((Loop) current).fromContent, true);
+                writer.write("\t\t\tfrom" +
+                        "\n\t\t\t\t" + ((Loop) current).fromContent +
+                        "\n\t\t\tuntil" +
+                        "\n\t\t\t\t" + applyReversExpression(((Loop) current).untilContent) +
+                        "\n\t\t\tloop" +
+                        "\n\t");
                 runDFS(child, writer);
+                writer.write("\t\t\t\t" + ((Loop) current).iterator +
+                        "\n\t\t\tend\n");
             }
         if (current.type == Type.NONE && current.name.compareTo("") != 0) {
             String name = applyAllPatterns(current.name);
             writer.write("\t\t\t" + name + "\n");
         }
+    }
+
+    private static String applyReversExpression(String expression) {
+        return expression
+                .replaceAll("<=", "/х")
+                .replaceAll("<", "/*")
+                .replaceAll(">=", "<")
+                .replaceAll(">", "<=")
+                .replaceAll("/\\*", ">=")
+                .replaceAll("/х", ">")
+                .replaceAll("!=", "=")
+                .replaceAll("==", "/=");
     }
 
     /**
@@ -75,7 +96,7 @@ public class Main {
         else
             line = line.replaceAll("(.)(\\p{Upper})", "$1_$2").toLowerCase(); // from camelCase to Eiffel shit.
         if (line.matches("return.*"))                       //replace "return (.*)"        --> result:= .*
-            line = line.replaceAll("return\\s+\\(?", "result:= ").replaceAll("\\)\\s*;", ";");
+            line = line.replaceAll("return\\s+\\(?", "result := ").replaceAll("\\)\\s*;", ";");
         return line;
     }
 
@@ -133,9 +154,10 @@ public class Main {
      */
     private static LinkedList<Variable> addVariables(LinkedList<Variable> list, Variable var) {
         int count = 0;
-        for (Variable item : list) {
-            if (item.type == var.type) {
-                item.name = item.name + ", " + var.name;
+        for (Variable variable : list) {
+            if (variable.type == var.type) {
+                if (!(variable.name.matches("(.*, )?i(, .*|$)")))
+                    variable.name = variable.name + ", " + var.name;
                 break;
             }
             count++;
@@ -180,11 +202,17 @@ public class Main {
                         loop.group(2),
                         loop.group(3)
                 );
-                Variable from = getVariable(loop.group(1) + ";", false);
-                addVariables(current.variables, from);
                 current.children.add(temp);
                 temp.parrent = current;
                 current = temp;
+                Variable from = getVariable(loop.group(1) + ";", false);
+
+                //add String to not children, to fromContent
+                Matcher varMatcher = Analyzer.variableDeclared.matcher(((Loop) current).fromContent + ";");
+                if (varMatcher.find())
+                    ((Loop) current).fromContent = ((Loop) current).fromContent.replaceAll(varMatcher.group(2) + "\\s*", "");
+                addVariables(current.parrent.variables, from);
+
             } else if (line.matches("}")) {
                 //find end of the expression
                 current = current.parrent;
@@ -206,7 +234,7 @@ public class Main {
      * Get variable with all attributes
      *
      * @param line line with variables
-     * @param b
+     * @param b    need to be added to the current children
      * @return TODO add initialization like " = new ArrayList<>;"
      * TODO variables must be NODE! Not line of code!! p.s. Now, I don't know WHY!?
      */

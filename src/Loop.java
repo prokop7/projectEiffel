@@ -14,7 +14,7 @@ public class Loop extends Node {
         this.children = new LinkedList<>();
     }
 
-    public static String fromContent;
-    public static String untilContent;
-    public static String iterator;
+    public String fromContent;
+    public String untilContent;
+    public String iterator;
 }
